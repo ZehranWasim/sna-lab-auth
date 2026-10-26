@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNA Lab - User Authentication Simulator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-brand-600 text-white p-2 rounded-lg shadow-lg">
+                    <i class="fa-solid fa-shield-halved text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-white leading-tight">SNA Lab Auth Portal</h1>
+                    <p class="text-xs text-slate-400">Cloudflare Pages Simulation</p>
+                </div>
+            </div>
+            <div id="nav-user-status" class="text-xs sm:text-sm text-slate-400 flex items-center gap-2">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="nav-status-text">System Ready</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+        
+        <!-- Alerts/Toast Container -->
+        <div id="alert-box" class="hidden mb-6 p-4 rounded-xl border text-sm font-medium transition-all duration-300 flex items-center gap-3">
+            <i id="alert-icon" class="fa-solid text-lg"></i>
+            <span id="alert-msg"></span>
+        </div>
+
+        <!-- AUTHENTICATION VIEW (LOGIN / REGISTER) -->
+        <div id="auth-view" class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Left Panel: Demo Accounts List -->
+            <div class="lg:col-span-5 bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-users text-brand-500"></i> Demo Credentials
+                    </h2>
+                    <span class="text-xs bg-slate-700 text-slate-300 px-2.5 py-1 rounded-full font-mono">5 Accounts Loaded</span>
+                </div>
+                <p class="text-xs text-slate-400 mb-4">Click on any account card below to automatically populate the login fields.</p>
+
+                <!-- Accounts Cards -->
+                <div id="demo-accounts-list" class="space-y-3">
+                    <!-- Populated dynamically by JS -->
+                </div>
+            </div>
+
+            <!-- Right Panel: Login / Register Form -->
+            <div class="lg:col-span-7 bg-slate-800/80 border border-slate-700/80 rounded-2xl p-6 sm:p-8 shadow-2xl relative">
+                
+                <!-- Toggle Tabs -->
+                <div class="flex border-b border-slate-700 mb-6">
+                    <button id="tab-login" onclick="switchTab('login')" class="pb-3 px-4 text-sm font-semibold border-b-2 border-brand-500 text-brand-500 focus:outline-none transition-colors">
+                        <i class="fa-solid fa-right-to-bracket mr-2"></i>Sign In
+                    </button>
+                    <button id="tab-register" onclick="switchTab('register')" class="pb-3 px-4 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 focus:outline-none transition-colors">
+                        <i class="fa-solid fa-user-plus mr-2"></i>Register New Account
+                    </button>
+                </div>
+
+                <!-- LOGIN FORM -->
+                <form id="login-form" onsubmit="handleLogin(event)" class="space-y-5">
+                    <div>
+                        <label for="login-email" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Email Address</label>
+                        <div class="relative">
+                            <i class="fa-regular fa-envelope absolute left-3.5 top-3.5 text-slate-400"></i>
+                            <input type="email" id="login-email" required class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-sm" placeholder="user@snalab.io">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="login-password" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Password</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-slate-400"></i>
+                            <input type="password" id="login-password" required class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all text-sm" placeholder="••••••••">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-medium py-2.5 px-4 rounded-xl shadow-lg shadow-brand-600/30 transition-all duration-200 flex items-center justify-center gap-2 text-sm">
+                        <span>Authenticate</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
+                </form>
+
+                <!-- REGISTER FORM -->
+                <form id="register-form" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+                    <div>
+                        <label for="reg-name" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Full Name</label>
+                        <input type="text" id="reg-name" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 text-sm" placeholder="John Doe">
+                    </div>
+
+                    <div>
+                        <label for="reg-email" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Email Address</label>
+                        <input type="email" id="reg-email" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 text-sm" placeholder="new.user@snalab.io">
+                    </div>
+
+                    <div>
+                        <label for="reg-role" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">System Role</label>
+                        <select id="reg-role" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:border-brand-500 text-sm">
+                            <option value="Student Analyst">Student Analyst</option>
+                            <option value="Lab Technician">Lab Technician</option>
+                            <option value="Guest User">Guest User</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="reg-password" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Password</label>
+                        <input type="password" id="reg-password" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 text-sm" placeholder="••••••••">
+                    </div>
+
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 px-4 rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm mt-2">
+                        <span>Create Account</span>
+                        <i class="fa-solid fa-user-check text-xs"></i>
+                    </button>
+                </form>
+
+            </div>
+        </div>
+
+        <!-- DASHBOARD VIEW (AFTER LOGIN) -->
+        <div id="dashboard-view" class="hidden space-y-6">
+            
+            <!-- Welcome Header Card -->
+            <div class="bg-gradient-to-r from-brand-700 to-indigo-900 border border-brand-500/30 rounded-2xl p-6 sm:p-8 shadow-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div class="flex items-center gap-4">
+                    <div id="dash-avatar" class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center text-2xl font-bold text-white shadow-inner">
+                        <!-- Initials dynamically inserted -->
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 id="dash-name" class="text-2xl font-bold text-white">Welcome User</h2>
+                            <span id="dash-role-badge" class="bg-brand-500/30 text-brand-200 border border-brand-400/30 text-xs px-2.5 py-0.5 rounded-full font-medium">Role</span>
+                        </div>
+                        <p id="dash-email" class="text-sm text-slate-300">user@snalab.io</p>
+                    </div>
+                </div>
+
+                <button onclick="handleLogout()" class="bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                </button>
+            </div>
+
+            <!-- Stats & Details Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Session Details -->
+                <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Session Token</span>
+                        <i class="fa-solid fa-key text-brand-500"></i>
+                    </div>
+                    <p id="dash-token" class="font-mono text-xs text-brand-300 bg-slate-900/80 p-3 rounded-lg border border-slate-700/50 break-all leading-relaxed">
+                        -
+                    </p>
+                </div>
+
+                <!-- Login Timestamp -->
+                <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Authenticated At</span>
+                        <i class="fa-solid fa-clock text-brand-500"></i>
+                    </div>
+                    <p id="dash-login-time" class="text-lg font-semibold text-slate-100">
+                        -
+                    </p>
+                    <p class="text-xs text-slate-400 mt-1">Status: <span class="text-emerald-400 font-medium">Active Session</span></p>
+                </div>
+
+                <!-- Node / Environment -->
+                <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Host Node</span>
+                        <i class="fa-solid fa-server text-brand-500"></i>
+                    </div>
+                    <p class="text-lg font-semibold text-slate-100">Cloudflare Edge</p>
+                    <p class="text-xs text-slate-400 mt-1">Lab Assignment: SNA Lab Host</p>
+                </div>
+            </div>
+
+            <!-- Detailed Profile JSON Payload Viewer -->
+            <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6">
+                <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-code text-brand-500"></i> Authenticated Session Object (LocalStorage Data)
+                </h3>
+                <pre id="dash-json-payload" class="bg-slate-900 text-emerald-400 font-mono text-xs p-4 rounded-xl border border-slate-700 overflow-x-auto leading-relaxed"></pre>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 bg-slate-950/60 py-4 text-center text-xs text-slate-500">
+        <p>SNA Lab Cloudflare Pages Deployment Demo &bull; Built with Tailwind & Vanilla JS</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // 5 Initial Static Accounts
+        const initialAccounts = [
+            { id: 1, name: "Alice Smith", email: "alice@snalab.io", pass: "sna2026pass", role: "Network Administrator", avatarColor: "bg-blue-600" },
+            { id: 2, name: "Bob Johnson", email: "bob@snalab.io", pass: "securesna123", role: "Security Analyst", avatarColor: "bg-emerald-600" },
+            { id: 3, name: "Carol Danvers", email: "carol@snalab.io", pass: "cloudlab2026", role: "Cloud Systems Lead", avatarColor: "bg-purple-600" },
+            { id: 4, name: "David Miller", email: "david@snalab.io", pass: "davidpass99", role: "Student Engineer", avatarColor: "bg-amber-600" },
+            { id: 5, name: "Eve Online", email: "eve@snalab.io", pass: "evepass456", role: "Lab Auditor", avatarColor: "bg-rose-600" }
+        ];
+
+        // Global Accounts Store (Persisted via LocalStorage or default to static)
+        let accounts = JSON.parse(localStorage.getItem('sna_lab_users')) || initialAccounts;
+        if (!localStorage.getItem('sna_lab_users')) {
+            localStorage.setItem('sna_lab_users', JSON.stringify(initialAccounts));
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            renderAccountsList();
+            checkExistingSession();
+        });
+
+        // Render Demo Accounts on UI
+        function renderAccountsList() {
+            const container = document.getElementById('demo-accounts-list');
+            container.innerHTML = accounts.map(acc => `
+                <div onclick="fillCredentials('${acc.email}', '${acc.pass}')" 
+                     class="group bg-slate-900/80 hover:bg-slate-700/60 border border-slate-700/60 hover:border-brand-500/50 p-3.5 rounded-xl cursor-pointer transition-all duration-200 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg ${acc.avatarColor || 'bg-brand-600'} flex items-center justify-center font-bold text-white text-xs shadow-md">
+                            ${acc.name.split(' ').map(n=>n[0]).join('')}
+                        </div>
+                        <div>
+                            <div class="text-sm font-semibold text-slate-200 group-hover:text-brand-300 transition-colors">${acc.name}</div>
+                            <div class="text-xs text-slate-400 font-mono">${acc.email}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded font-mono block mb-1">Pass: ${acc.pass}</span>
+                        <span class="text-[10px] text-slate-500">${acc.role}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Populate Form Fields when clicking a demo card
+        function fillCredentials(email, password) {
+            switchTab('login');
+            document.getElementById('login-email').value = email;
+            document.getElementById('login-password').value = password;
+            showAlert('Credentials filled! Click Authenticate.', 'info');
+        }
+
+        // Switch Tabs Logic
+        function switchTab(tab) {
+            const loginForm = document.getElementById('login-form');
+            const regForm = document.getElementById('register-form');
+            const tabLogin = document.getElementById('tab-login');
+            const tabReg = document.getElementById('tab-register');
+
+            if (tab === 'login') {
+                loginForm.classList.remove('hidden');
+                regForm.classList.add('hidden');
+                tabLogin.className = "pb-3 px-4 text-sm font-semibold border-b-2 border-brand-500 text-brand-500 focus:outline-none transition-colors";
+                tabReg.className = "pb-3 px-4 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 focus:outline-none transition-colors";
+            } else {
+                loginForm.classList.add('hidden');
+                regForm.classList.remove('hidden');
+                tabReg.className = "pb-3 px-4 text-sm font-semibold border-b-2 border-brand-500 text-brand-500 focus:outline-none transition-colors";
+                tabLogin.className = "pb-3 px-4 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 focus:outline-none transition-colors";
+            }
+        }
+
+        // Handle Login Submission
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-password').value.trim();
+
+            const user = accounts.find(a => a.email.toLowerCase() === email.toLowerCase() && a.pass === pass);
+
+            if (user) {
+                // Generate Fake Token & Session Data
+                const sessionData = {
+                    user: { id: user.id, name: user.name, email: user.email, role: user.role },
+                    token: 'sna_jwt_' + Math.random().toString(36).substring(2) + Date.now().toString(36),
+                    authenticatedAt: new Date().toLocaleString()
+                };
+
+                localStorage.setItem('sna_session', JSON.stringify(sessionData));
+                showAlert('Login successful! Redirection to Dashboard...', 'success');
+                setTimeout(() => showDashboard(sessionData), 800);
+            } else {
+                showAlert('Invalid Email or Password! Please try again or click a demo card.', 'error');
+            }
+        }
+
+        // Handle Registration
+        function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const role = document.getElementById('reg-role').value;
+            const pass = document.getElementById('reg-password').value.trim();
+
+            if (accounts.some(a => a.email.toLowerCase() === email.toLowerCase())) {
+                showAlert('Account with this email already exists!', 'error');
+                return;
+            }
+
+            const newAcc = {
+                id: accounts.length + 1,
+                name,
+                email,
+                pass,
+                role,
+                avatarColor: 'bg-indigo-600'
+            };
+
+            accounts.push(newAcc);
+            localStorage.setItem('sna_lab_users', JSON.stringify(accounts));
+            renderAccountsList();
+
+            showAlert('Account created! Logging you in now...', 'success');
+            
+            // Auto login
+            const sessionData = {
+                user: { id: newAcc.id, name: newAcc.name, email: newAcc.email, role: newAcc.role },
+                token: 'sna_jwt_' + Math.random().toString(36).substring(2) + Date.now().toString(36),
+                authenticatedAt: new Date().toLocaleString()
+            };
+            localStorage.setItem('sna_session', JSON.stringify(sessionData));
+            
+            setTimeout(() => {
+                document.getElementById('register-form').reset();
+                showDashboard(sessionData);
+            }, 900);
+        }
+
+        // Display Dashboard View
+        function showDashboard(session) {
+            document.getElementById('auth-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.remove('hidden');
+
+            // Populate dashboard
+            document.getElementById('dash-name').innerText = session.user.name;
+            document.getElementById('dash-email').innerText = session.user.email;
+            document.getElementById('dash-role-badge').innerText = session.user.role;
+            document.getElementById('dash-token').innerText = session.token;
+            document.getElementById('dash-login-time').innerText = session.authenticatedAt;
+            
+            // Initials Avatar
+            const initials = session.user.name.split(' ').map(n=>n[0]).join('');
+            document.getElementById('dash-avatar').innerText = initials;
+
+            // JSON Display
+            document.getElementById('dash-json-payload').innerText = JSON.stringify(session, null, 2);
+
+            // Update Nav status
+            document.getElementById('nav-status-text').innerText = `Logged in as ${session.user.name}`;
+            document.getElementById('nav-status-text').classList.add('text-emerald-400');
+        }
+
+        // Handle Logout
+        function handleLogout() {
+            localStorage.removeItem('sna_session');
+            document.getElementById('dashboard-view').classList.add('hidden');
+            document.getElementById('auth-view').classList.remove('hidden');
+            document.getElementById('login-form').reset();
+
+            document.getElementById('nav-status-text').innerText = 'System Ready';
+            document.getElementById('nav-status-text').classList.remove('text-emerald-400');
+
+            showAlert('Logged out successfully.', 'info');
+        }
+
+        // Check for session persistence on refresh
+        function checkExistingSession() {
+            const existing = localStorage.getItem('sna_session');
+            if (existing) {
+                try {
+                    const sessionData = JSON.parse(existing);
+                    showDashboard(sessionData);
+                } catch(err) {
+                    localStorage.removeItem('sna_session');
+                }
+            }
+        }
+
+        // Utility: Alert Notification Box
+        function showAlert(msg, type = 'info') {
+            const box = document.getElementById('alert-box');
+            const icon = document.getElementById('alert-icon');
+            const text = document.getElementById('alert-msg');
+
+            box.classList.remove('hidden', 'bg-red-900/50', 'border-red-600', 'text-red-200', 'bg-emerald-900/50', 'border-emerald-600', 'text-emerald-200', 'bg-blue-900/50', 'border-blue-600', 'text-blue-200');
+
+            if (type === 'error') {
+                box.classList.add('bg-red-900/50', 'border-red-600', 'text-red-200');
+                icon.className = 'fa-solid fa-triangle-exclamation text-red-400';
+            } else if (type === 'success') {
+                box.classList.add('bg-emerald-900/50', 'border-emerald-600', 'text-emerald-200');
+                icon.className = 'fa-solid fa-circle-check text-emerald-400';
+            } else {
+                box.classList.add('bg-blue-900/50', 'border-blue-600', 'text-blue-200');
+                icon.className = 'fa-solid fa-circle-info text-blue-400';
+            }
+
+            text.innerText = msg;
+
+            // Auto-hide alert after 4 seconds
+            setTimeout(() => {
+                box.classList.add('hidden');
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
